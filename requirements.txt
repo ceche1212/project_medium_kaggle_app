@@ -1,0 +1,11 @@
+pandas
+numpy
+matplotlib
+streamlit
+streamlit_option_menu
+streamlit-aggrid
+streamlit-extras
+st-gsheets-connection
+streamlit-authenticator
+plotly
+scikit-learn
