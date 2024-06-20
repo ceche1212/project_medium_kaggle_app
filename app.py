@@ -9,10 +9,14 @@ from streamlit_extras.add_vertical_space import add_vertical_space
 from streamlit_extras.stylable_container import stylable_container  #
 from streamlit_gsheets import GSheetsConnection
 from sklearn import metrics
+import hashlib
 
 
 if 'user_name' not in st.session_state:
     st.session_state['user_name'] = ''
+
+if 'student_name' not in st.session_state:
+    st.session_state['student_name'] = ''
 
 if 'password' not in st.session_state:
     st.session_state['password'] = ''
@@ -25,6 +29,7 @@ st.set_page_config(
         page_title='Medium Project', # agregamos el nombre de la pagina, este se ve en el browser
         page_icon='📈' # se agrega el favicon, tambien este se ve en el browser
     )
+
 
 login = None
 log_df_n_cols = 4
@@ -70,7 +75,7 @@ with st.sidebar:
     if selected == 'Login':
 
         user_name = st.text_input('User email', placeholder = 'username@email.com')
-        password =  st.text_input('Password', placeholder = '12345678',type="password")
+        user_password =  st.text_input('Password', placeholder = '12345678',type="password")
         login = st.button("Login", type="primary")
     add_vertical_space(1)
 
@@ -102,18 +107,30 @@ if selected == 'Login':
    add_vertical_space(1)
 
 if login:
-    if user_name not in gs_user_db.keys():
+
+    hash_object_user_name = hashlib.sha256()
+    hash_object_user_name.update(user_name.encode())
+    hashed_username = hash_object_user_name.hexdigest()
+
+    if hashed_username not in gs_user_db.keys():
         with st.sidebar:
             st.error('Username not registered')
     else:
-        real_password = gs_user_db[user_name]['password']
-        if password.lower() != real_password:
+
+        hash_object_password = hashlib.sha256()
+        real_password = gs_user_db[hashed_username]['password']
+
+        hash_object_password.update(user_password.encode())
+        hashed_user_password = hash_object_password.hexdigest()
+
+        if hashed_user_password != real_password:
             with st.sidebar:
                 st.error('Sorry wrong password')
         else:
-            user_first_name = gs_user_db[user_name]['name']
-            group = gs_user_db[user_name]['group']
+            user_first_name = gs_user_db[hashed_username]['name']
+            group = gs_user_db[hashed_username]['group']
             st.session_state['user_name'] = user_name
+            st.session_state['student_name'] = user_first_name
             st.session_state['password'] = real_password
             st.session_state['group'] =  group
             with st.sidebar:
@@ -129,9 +146,7 @@ with st.sidebar:
             st.session_state['user_name'] = ''
             st.session_state['password'] = ''
             st.session_state['group'] = ''
-            st.session_state['Schedule'] = ''
-            st.session_state['valid'] = ''
-            st.session_state['resource_schedule'] = ''
+            st.session_state['student_name'] = ''
             st.rerun()
     else:
         st.write(f"User: Not logged in ")
@@ -228,7 +243,7 @@ if selected == 'Submit Results':
                                     st.dataframe(cm,use_container_width=True)
 
                                 solution_dict = dict()
-                                solution_dict['user'] = st.session_state['user_name']
+                                solution_dict['user'] = st.session_state['student_name']
                                 solution_dict['group'] = st.session_state['group']
                                 solution_dict['time'] = timestamp
                                 solution_dict['score'] = ACC
